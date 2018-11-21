@@ -1,0 +1,8 @@
+## YAML Template.
+---
+max-filesize: 1000
+mime-type:
+    - text/plain
+    - text/html
+    - text/css
+    - text/javascript
