@@ -64,5 +64,12 @@ class FtpFile implements File
     {
         return filesize($this->filename);
     }
+    
+    /**
+     * Remove temp file
+     */
+    function __destruct() {
+        unlink($this->filename);
+    }
 }
 
