@@ -1,84 +1,95 @@
-<?php
+<?php declare(strict_types=1);
+
 /**
- * FInderStrPos - Simple finder the line and position of substing in file
- * PHP Version 7.0
+ * FinderStrPos - Simple finder the line and position of substing in file
+ * PHP Version 7.2
  * 
  * @see https://github.com/zazliki/finder-str-pos
  */
-namespace FinderStrPos;
 
-use Symfony\Component\Yaml\Yaml;
-use Symfone\Component\Yaml\Exception\ParseException;
+namespace Zazliki\FinderStrPos;
+
+use Zazliki\FinderStrPos\Exception\FinderException;
+use Zazliki\FinderStrPos\FileType\File;
 
 class Finder
 {
     /**
-     * @var File $file          Object of file
-     * @var array $config       Config from Yaml-file
-     * @var string $substring   Substring of query
-     * @var callback callable   User func
+     * @var File
      */
-    private $file,
-            $config,
-            $substring,
-            $callback;
-    
+    private $file;
+
     /**
-     * Set config by passed filename
-     * @param string $config
+     * @var Config
      */
-    public function __construct(string $config)
+    private $config;
+
+    /**
+     * @var string
+     */
+    private $substring;
+
+    /**
+     * @var callable
+     */
+    private $callback;
+
+    public function __construct()
     {
-        try {
-            $this->config = Yaml::parseFile($config);
-        } catch (ParseException $exception) {
-            printf('Error to parse the YAML string: %s', $exception->getMessage());
-        }
+        $this->setConfig(new Config());
     }
-    
+
     /**
-     * Return array of config
-     * @return array
+     * @return mixed[]
      */
     public function getConfig(): array
     {
-        return $this->config;
+        return $this->config->get();
     }
-    
-    /**
-     * Check and set object of file
-     * @param \FinderStrPos\File $file
-     */
-    public function file(File $file)
+
+    public function setConfig(Config $config): self
     {
-        $this->file = null;
-        if (in_array($file->getMimeType(), $this->config['mime-type']) && $file->getSize() <= $this->config['max-filesize']) {
-            $this->file = $file;
-        }
+        $this->config = $config;
+
+        return $this;
     }
-    
+
     /**
-     * Set substring for search
-     * @param string $substring
+     * @param File $file
+     *
+     * @return Finder
+     *
+     * @throws FinderException
      */
-    public function search(string $substring)
+    public function file(File $file): self
+    {
+        if (!in_array($file->getMimeType(), $this->config->allowedMimeTypes())) {
+            throw new FinderException('Invalid mime types');
+        }
+
+        if ($file->getSize() > $this->config->allowedMaxSize()) {
+            throw new FinderException('File is to large');
+        }
+
+        $this->file = $file;
+
+        return $this;
+    }
+
+    public function setSubstring(string $substring)
     {
         $this->substring = $substring;
+
+        return $this;
     }
-    
-    /**
-     * Add user func
-     * @param callable $func
-     */
-    public function callback(callable $func)
+
+    public function setSearchCallback(?callable $func)
     {
         $this->callback = $func;
+
+        return $this;
     }
     
-    /**
-     * Execute matches by substring from file
-     * @return array
-     */
     public function execute(): array
     {
         $matches = [];
@@ -87,21 +98,28 @@ class Finder
             while (!feof($handle)) {
                 $line += 1;
                 $string = str_replace("\n", "", fgets($handle));
+
+                $searchFunc = function ($string, $substring) {
+                    return strpos($string, $substring);
+                };
+
                 if (is_callable($this->callback)) {
-                    $result = call_user_func($this->callback, $string);
-                    if ($result == $this->substring) {
-                        $matches[] = compact('string', 'line', 'result');
-                    }
-                } else {
-                    if (($pos = strpos($string, $this->substring)) !== FALSE) {
-                        $matches[] = compact('string', 'line', 'pos');
-                    }
+                    $searchFunc = $this->callback;
+                }
+
+                if (false !== $result = call_user_func($searchFunc, $string, $this->substring)) {
+                    $matches[] = [
+                        'line' => $line,
+                        'pos' => $result,
+                        'string' => $string,
+                    ];
                 }
             }
+
             fclose($handle);
         }
+
         return $matches;
     }
-    
 }
 

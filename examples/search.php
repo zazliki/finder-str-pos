@@ -1,22 +1,25 @@
 <?php
 require '../vendor/autoload.php';
 
-use FinderStrPos\Finder;
-use FinderStrPos\LocalFile;
+use Zazliki\FinderStrPos\Finder;
+use Zazliki\FinderStrPos\FileType\LocalFile;
 
-$file = new LocalFile('files/htmlfile.html');
-$finder = new Finder('../configs.yml');
-$finder->file($file);
+$finder = new Finder();
+$finder->file(new LocalFile('files/htmlfile.html'));
 
 // execute simple substring
-$finder->search('TODO');
-$matches = $finder->execute();
+$matches = $finder
+    ->setSubstring('TODO')
+    ->execute()
+;
 print_r($matches);
 
 // execute by user func
-$finder->callback(function($str) {
-    return md5($str);
-});
-$finder->search(md5('<html>'));
-$matches = $finder->execute();
+$matches = $finder
+    ->setSubstring(md5('<html>'))
+    ->setSearchCallback(function($str, $substring) {
+        return md5($str) === $substring;
+    })
+    ->execute();
+;
 print_r($matches);

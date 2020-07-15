@@ -1,11 +1,16 @@
-<?php
+<?php declare(strict_types=1);
+
 /**
  * This file just is part of library.
- * PHP Version 7.0
+ * PHP Version 7.2
  * 
  * @see https://github.com/zazliki/finder-str-pos
  */
-namespace FinderStrPos;
+
+namespace Zazliki\FinderStrPos\FileType;
+
+use Exception;
+use Zazliki\FinderStrPos\Exception\FileException;
 
 class LocalFile implements File
 {
@@ -14,43 +19,36 @@ class LocalFile implements File
      * @var string
      */
     private $filename;
-    
+
     /**
-     * Create a new local file
+     * LocalFile constructor.
+     *
      * @param string $filename
-     * @throws \Exception
+     *
+     * @throws Exception
      */
     public function __construct(string $filename)
     {
-        if (file_exists($filename)) {
-            $this->filename = $filename;
-        } else {
-            throw new \Exception('File not found');
+        if (!file_exists($filename)) {
+            throw new FileException('Local file not found');
         }
+
+        $this->filename = $filename;
     }
     
     /**
-     * Read file from local
-     * @return resource | false
+     * @inheritDoc
      */
     public function read()
     {
         return @fopen($this->filename, 'r');
     }
-    
-    /**
-     * Get mime type of file
-     * @return string
-     */
+
     public function getMimeType(): string
     {
         return mime_content_type($this->filename);
     }
-    
-    /**
-     * Get filesize
-     * @return int
-     */
+
     public function getSize(): int
     {
         return filesize($this->filename);
