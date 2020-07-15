@@ -27,7 +27,7 @@ final class Config
      *
      * @throws ConfigException
      */
-    public function __construct(?string $configPath = null)
+    public function __construct(string $configPath = null)
     {
         if (null === $configPath) {
             $configPath = $this->getDefaultConfigPath();
