@@ -60,6 +60,6 @@ final class Config
 
     private function getDefaultConfigPath(): string
     {
-        return '../configs.yml';
+        return '../config/configs.yml';
     }
 }
